@@ -1,18 +1,20 @@
 #include <Arduino.h>
+#include "sensor_manager/sensor_manager.h"
 
-// put function declarations here:
-int myFunction(int, int);
+SensorManager sensorManager;
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+void setup()
+{
+  Serial.begin(9600);
+  sensorManager.initialize();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
+void loop()
+{
+  sensorManager.readSensors();
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  float humidity = sensorManager.getHumidity();
+  Serial.print("Humidity: ");
+  Serial.print(humidity);
+  delay(2000);
 }
