@@ -14,7 +14,11 @@ void loop()
   sensorManager.readSensors();
 
   float humidity = sensorManager.getHumidity();
+  float temperature = sensorManager.getTemperature();
   Serial.print("Humidity: ");
-  Serial.print(humidity);
-  delay(2000);
+  Serial.println(humidity);
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+
+  delay(4000);
 }

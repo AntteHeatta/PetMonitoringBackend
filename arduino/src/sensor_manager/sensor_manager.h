@@ -1,7 +1,7 @@
 #ifndef SENSOR_MANAGER_H
 #define SENSOR_MANAGER_H
 
-#include "humidity/humidity_sensor.h"
+#include "humidity_temperature/humidity_temperature_sensor.h"
 
 class SensorManager
 {
@@ -10,9 +10,10 @@ public:
     void initialize();
     void readSensors();
     float getHumidity();
+    float getTemperature();
 
 private:
-    HumiditySensor humiditySensor;
+    HumidityTemperatureSensor humidityTemperatureSensor;
 };
 
 #endif

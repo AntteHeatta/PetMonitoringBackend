@@ -3,17 +3,19 @@
 
 #include <DHT.h>
 
-class HumiditySensor
+class HumidityTemperatureSensor
 {
 public:
-    HumiditySensor(int pin = 2);
+    HumidityTemperatureSensor(int pin = 2);
     void begin();
     void read();
     float getHumidity();
+    float getTemperature();
 
 private:
     DHT dht;
     float humidity;
+    float temperature;
 };
 
 #endif

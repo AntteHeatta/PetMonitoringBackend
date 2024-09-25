@@ -1,18 +1,23 @@
 #include "sensor_manager.h"
 
-SensorManager::SensorManager() : humiditySensor(2) {}
+SensorManager::SensorManager() : humidityTemperatureSensor(0) {}
 
 void SensorManager::initialize()
 {
-    humiditySensor.begin();
+    humidityTemperatureSensor.begin();
 }
 
 void SensorManager::readSensors()
 {
-    humiditySensor.read();
+    humidityTemperatureSensor.read();
 }
 
 float SensorManager::getHumidity()
 {
-    return humiditySensor.getHumidity();
+    return humidityTemperatureSensor.getHumidity();
+}
+
+float SensorManager::getTemperature()
+{
+    return humidityTemperatureSensor.getTemperature();
 }
