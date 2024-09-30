@@ -7,6 +7,7 @@ void setup()
 {
   Serial.begin(9600);
   sensorManager.initialize();
+  delay(2000);
 }
 
 void loop()
@@ -15,10 +16,13 @@ void loop()
 
   float humidity = sensorManager.getHumidity();
   float temperature = sensorManager.getTemperature();
+  float luminosity = sensorManager.getLuminosity();
   Serial.print("Humidity: ");
   Serial.println(humidity);
   Serial.print("Temperature: ");
   Serial.println(temperature);
+  Serial.print("Luminosity: ");
+  Serial.println(luminosity);
 
-  delay(4000);
+  delay(5000);
 }
