@@ -1,6 +1,6 @@
 #include "humidity_temperature_sensor.h"
 
-HumidityTemperatureSensor::HumidityTemperatureSensor(int pin) : dht(pin, DHT22), humidity(0), temperature(0) {}
+HumidityTemperatureSensor::HumidityTemperatureSensor(int pin) : dht(pin, DHT22), humidity(2), temperature(2) {}
 
 void HumidityTemperatureSensor::begin()
 {
@@ -11,6 +11,10 @@ void HumidityTemperatureSensor::read()
 {
     humidity = dht.readHumidity();
     temperature = dht.readTemperature();
+    if (isnan(humidity) || isnan(temperature))
+    {
+        Serial.println("Failed to read from DHT sensor!");
+    }
 }
 
 float HumidityTemperatureSensor::getHumidity()

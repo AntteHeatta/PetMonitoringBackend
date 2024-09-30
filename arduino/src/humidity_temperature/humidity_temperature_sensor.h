@@ -1,5 +1,5 @@
-#ifndef HUMIDITY_SENSOR_H
-#define HUMIDITY_SENSOR_H
+#ifndef HUMIDITY_TEMPERATURE_SENSOR_H
+#define HUMIDITY_TEMPERATURE_SENSOR_H
 
 #include <DHT.h>
 
@@ -14,6 +14,7 @@ public:
 
 private:
     DHT dht;
+    int pin;
     float humidity;
     float temperature;
 };
