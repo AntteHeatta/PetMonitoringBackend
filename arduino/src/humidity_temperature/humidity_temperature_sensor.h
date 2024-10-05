@@ -6,7 +6,7 @@
 class HumidityTemperatureSensor
 {
 public:
-    HumidityTemperatureSensor(int pin = 2);
+    HumidityTemperatureSensor(int pin);
     void begin();
     void read();
     float getHumidity();

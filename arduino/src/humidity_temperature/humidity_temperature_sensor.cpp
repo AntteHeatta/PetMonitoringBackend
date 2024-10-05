@@ -1,6 +1,6 @@
 #include "humidity_temperature_sensor.h"
 
-HumidityTemperatureSensor::HumidityTemperatureSensor(int pin) : dht(pin, DHT22), humidity(2), temperature(2) {}
+HumidityTemperatureSensor::HumidityTemperatureSensor(int pin) : dht(pin, DHT22), humidity(4), temperature(4) {}
 
 void HumidityTemperatureSensor::begin()
 {
