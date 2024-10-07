@@ -1,0 +1,6 @@
+Useful commands:
+
+- If you face an error like: "SemanticVersionError: Invalid simple block '^'"
+- Run:
+- pio run -t clean
+- pio run -t cleanall

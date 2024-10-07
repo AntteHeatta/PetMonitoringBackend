@@ -1,7 +1,7 @@
-#include <pins_arduino.h>
 #ifndef LUMINOSITY_SENSOR_H
 #define LUMINOSITY_SENSOR_H
 
+#include <Arduino.h>
 #include <BH1750.h>
 
 class LuminositySensor

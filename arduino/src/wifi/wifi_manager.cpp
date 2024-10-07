@@ -1,21 +1,22 @@
 #include "wifi_manager.h"
-#include <WiFiEsp.h>
-#include <SoftwareSerial.h>
+#include <ESP8266WiFi.h>
 
-WiFiManager::WiFiManager(int rxPin, int txPin, const char *ssid, const char *pass)
-    : espSerial(rxPin, txPin), ssid(ssid), pass(pass) {}
+WiFiManager::WiFiManager(const char *ssid, const char *pass)
+    : ssid(ssid), pass(pass) {}
 
 void WiFiManager::initialize()
 {
-    espSerial.begin(115200);
-    WiFi.init(&espSerial);
+    WiFi.begin(ssid, pass);
 
-    if (WiFi.status() == WL_NO_SHIELD)
+    while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("WiFi module not connected");
-        while (true)
-            ;
+        delay(500);
+        Serial.print("Attempting to connect to WiFi");
     }
+
+    Serial.println("Connected to WiFi");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
 }
 
 void WiFiManager::connect()
