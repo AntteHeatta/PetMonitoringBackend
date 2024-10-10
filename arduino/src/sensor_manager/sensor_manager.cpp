@@ -1,6 +1,6 @@
 #include "sensor_manager.h"
 
-SensorManager::SensorManager() : humidityTemperatureSensor(4), luminositySensor(A0) {}
+SensorManager::SensorManager() : humidityTemperatureSensor(5), luminositySensor(A0) {}
 
 void SensorManager::initialize()
 {

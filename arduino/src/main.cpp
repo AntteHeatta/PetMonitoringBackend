@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Adafruit_I2CDevice.h>
+#include <SPI.h>
 #include "sensor_manager/sensor_manager.h"
 #include "wifi/wifi_manager.h"
 #include "azure/azure_manager.h"
@@ -15,23 +17,23 @@ void setup()
   wifiManager.initialize();
   wifiManager.connect();
   // azureManager.initialize();
-  // sensorManager.initialize();
+  sensorManager.initialize();
   delay(2000);
 }
 
 void loop()
 {
-  // sensorManager.readSensors();
+  sensorManager.readSensors();
 
-  // float humidity = sensorManager.getHumidity();
-  // float temperature = sensorManager.getTemperature();
-  // float luminosity = sensorManager.getLuminosity();
-  // Serial.print("Humidity: ");
-  // Serial.println(humidity);
-  // Serial.print("Temperature: ");
-  // Serial.println(temperature);
-  // Serial.print("Luminosity: ");
-  // Serial.println(luminosity);
+  float humidity = sensorManager.getHumidity();
+  float temperature = sensorManager.getTemperature();
+  float luminosity = sensorManager.getLuminosity();
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+  Serial.print("Luminosity: ");
+  Serial.println(luminosity);
 
   if (!wifiManager.isConnected())
   {
