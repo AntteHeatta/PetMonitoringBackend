@@ -25,7 +25,7 @@ void AzureManager::sendToAzure(float temperature, float humidity, float luminosi
 
     client.loop();
     StaticJsonDocument<200> jsonDoc;
-    jsonDoc["temperature"] = temperature;
+    jsonDoc["temperature"] = temperature - 3;
     jsonDoc["humidity"] = humidity;
     jsonDoc["luminosity"] = luminosity;
 
