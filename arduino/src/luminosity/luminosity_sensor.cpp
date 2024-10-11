@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "luminosity_sensor.h"
 
 LuminositySensor::LuminositySensor(int pin) : pin(), luminosity() {}

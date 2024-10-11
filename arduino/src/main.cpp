@@ -1,17 +1,22 @@
 #include <Arduino.h>
+#include <Adafruit_I2CDevice.h>
+#include <SPI.h>
 #include "sensor_manager/sensor_manager.h"
 #include "wifi/wifi_manager.h"
-#include "wifi_credentials.h"
+#include "azure/azure_manager.h"
+#include "credentials.h"
 
 SensorManager sensorManager;
-WiFiManager wifiManager(2, 3, ssid, pass);
+WiFiManager wifiManager(ssid, pass);
+AzureManager azureManager(mqttServer, mqttPort, deviceId, sasToken);
 
 void setup()
 {
+  Serial.print("Starting the Pet Monitoring application backend");
   Serial.begin(9600);
   wifiManager.initialize();
   wifiManager.connect();
-
+  // azureManager.initialize();
   sensorManager.initialize();
   delay(2000);
 }
@@ -35,6 +40,8 @@ void loop()
     Serial.println("WiFi connection lost, reconnecting.");
     wifiManager.connect();
   }
+
+  // azureManager.sendToAzure(temperature, humidity, luminosity);
 
   delay(5000);
 }
