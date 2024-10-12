@@ -11,7 +11,7 @@ void WiFiManager::initialize()
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
-        Serial.print("Attempting to connect to WiFi");
+        Serial.println("Attempting to connect to WiFi");
     }
 
     Serial.println("Connected to WiFi");

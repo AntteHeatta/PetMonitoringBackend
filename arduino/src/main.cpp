@@ -12,7 +12,6 @@ AzureManager azureManager(mqttServer, mqttPort, deviceId, sasToken);
 
 void setup()
 {
-  Serial.print("Starting the Pet Monitoring application backend");
   Serial.begin(9600);
   wifiManager.initialize();
   wifiManager.connect();
@@ -27,13 +26,22 @@ void loop()
 
   float humidity = sensorManager.getHumidity();
   float temperature = sensorManager.getTemperature();
-  float luminosity = sensorManager.getLuminosity();
+  // float luminosity = sensorManager.getLuminosity();
+  float pressure = sensorManager.getPressure();
   Serial.print("Humidity: ");
-  Serial.println(humidity);
+  Serial.print(humidity);
+  Serial.println("%");
+  Serial.println();
   Serial.print("Temperature: ");
-  Serial.println(temperature);
-  Serial.print("Luminosity: ");
-  Serial.println(luminosity);
+  Serial.print(temperature);
+  Serial.println("°C");
+  Serial.println();
+  // Serial.print("Luminosity: ");
+  // Serial.println(luminosity);
+  Serial.print("Pressure: ");
+  Serial.print(pressure);
+  Serial.println("hPa");
+  Serial.println();
 
   if (!wifiManager.isConnected())
   {
@@ -43,5 +51,5 @@ void loop()
 
   // azureManager.sendToAzure(temperature, humidity, luminosity);
 
-  delay(5000);
+  delay(3000);
 }
