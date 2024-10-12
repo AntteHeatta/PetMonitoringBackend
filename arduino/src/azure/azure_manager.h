@@ -2,25 +2,38 @@
 #define AZURE_MANAGER_H
 
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <az_core.h>
+#include <az_iot.h>
 
 class AzureManager
 {
 public:
-    AzureManager(const char *mqttServer, int mqttPort, const char *deviceId, const char *sasToken);
+    AzureManager(const char *host, int port, const char *deviceId, const char *deviceKey);
     void initialize();
     void sendToAzure(float temperature, float humidity, float luminosity);
-    void reconnect();
     IPAddress getIP();
     bool isConnected();
+    // void receiveCallback();
+    void establishConnection(); // Ensure this is declared here
+    static void receivedCallback(char *topic, byte *payload, unsigned int length);
 
 private:
-    WiFiClientSecure espClient; // Secure Wi-Fi client
-    PubSubClient client;        // MQTT client
-    const char *mqttServer;     // Azure IoT Hub hostname
-    int mqttPort;               // MQTT port (usually 8883 for secure)
-    const char *deviceId;       // Device ID registered in IoT Hub
-    const char *sasToken;       // SAS token for authentication
+    WiFiClientSecure wifi_client; // Secure Wi-Fi client
+    PubSubClient client;          // MQTT client
+    const char *host;             // Azure IoT Hub hostname
+    int port;                     // MQTT port (usually 8883 for secure)
+    const char *deviceId;         // Device ID registered in IoT Hub
+    const char *deviceKey;
+
+    // Azure IoT
+    az_iot_hub_client iot_hub_client;
+    char sas_token[200];
+
+    // Helper functions
+    // bool generateSasToken();
+    // static void receivedCallback(char *topic, byte *payload, unsigned int length);
 };
 #endif
