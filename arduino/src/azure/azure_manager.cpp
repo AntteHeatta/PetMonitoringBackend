@@ -16,7 +16,7 @@
 
 #include "credentials.h"
 
-const char *publishTopic = "devices/esp8266_device/messages/events/";
+const char *publishTopic = "devices/esp8266_gradu/messages/events/";
 WiFiClientSecure wifi_client;
 
 static X509List cert((const char *)ca_pem);
@@ -29,7 +29,7 @@ static char base64_decoded_device_key[32];
 
 #define AZURE_SDK_CLIENT_USER_AGENT "c%2F" AZ_SDK_VERSION_STRING "(ard;esp8266)"
 #define NTP_SERVERS "pool.ntp.org", "time.nist.gov"
-#define MQTT_PACKET_SIZE 1024
+#define MQTT_PACKET_SIZE 2048
 #define ONE_HOUR_IN_SECS 3600
 #define sizeofarray(a) (sizeof(a) / sizeof(a[0]))
 
@@ -41,24 +41,49 @@ AzureManager::AzureManager(const char *host, int port, const char *deviceId, con
 
 void AzureManager::initialize()
 {
+    Serial.println("AzureManager::initialize()");
     establishConnection();
 }
 
-void AzureManager::sendToAzure(float temperature, float humidity, float luminosity)
+void AzureManager::keepConnection()
 {
     if (!mqtt_client.connected())
     {
+        Serial.println("keepConnection no mqtt connected... reconnecting");
+        establishConnection();
+    }
+    mqtt_client.loop();
+}
+
+void AzureManager::sendToAzure(float temperature, float humidity, float pressure, float luminosity)
+{
+    static unsigned long lastTokenRefresh = 0;
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastTokenRefresh > 3300000)
+    {
+        Serial.println("Token refresh");
+        establishConnection();
+        lastTokenRefresh = currentMillis;
+    }
+
+    Serial.println("-----");
+    Serial.println("sendToAzure");
+    if (!mqtt_client.connected())
+    {
+        Serial.println("!mqtt_client.connected()");
         establishConnection();
     }
 
-    mqtt_client.loop();
     StaticJsonDocument<200> jsonDoc;
     jsonDoc["temperature"] = temperature;
     jsonDoc["humidity"] = humidity;
+    jsonDoc["pressure"] = pressure;
     jsonDoc["luminosity"] = luminosity;
 
     char jsonBuffer[256];
     serializeJson(jsonDoc, jsonBuffer);
+    Serial.print("jsonBuffer");
+    Serial.println(jsonBuffer);
 
     mqtt_client.publish(publishTopic, jsonBuffer, false);
 }
@@ -73,21 +98,156 @@ IPAddress AzureManager::getIP()
     return WiFi.localIP();
 }
 
-// From Azure SDK for C documentation examples
+// SAS Token generation
+String urlEncode(const String &str)
+{
+    String encoded = "";
+    char c;
+    for (unsigned int i = 0; i < str.length(); i++)
+    {
+        c = str.charAt(i);
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            encoded += c;
+        }
+        else
+        {
+            char buffer[4];
+            sprintf(buffer, "%%%02X", c);
+            encoded += buffer;
+        }
+    }
+    return encoded;
+}
+void generateSasToken(char *sas_token, size_t token_size, const char *resourceUri, const char *deviceKey, int expirySeconds)
+{
+    // Step 1: Get the expiry time
+    time_t now = time(NULL);
+    uint32_t expiry = now + expirySeconds;
 
+    Serial.print("SAS Token Expiry (Unix Time): ");
+    Serial.println(expiry);
+
+    // Step 2: Create the string to sign (resourceUri should NOT be URL-encoded here)
+    String stringToSign = String(resourceUri) + "\n" + String(expiry);
+    Serial.print("String to Sign: ");
+    Serial.println(stringToSign);
+
+    // Step 3: Decode device key from base64
+    uint8_t decoded_device_key[64]; // Adjust size as per your key
+    int decoded_key_length = base64_decode_chars(deviceKey, strlen(deviceKey), (char *)decoded_device_key);
+    if (decoded_key_length <= 0)
+    {
+        Serial.println("Failed to decode device key");
+        sas_token[0] = '\0'; // Return an empty string in case of failure
+        return;
+    }
+    Serial.print("Decoded Device Key Length: ");
+    Serial.println(decoded_key_length);
+
+    // Step 4: Compute HMAC-SHA256
+    unsigned char hmac_signature[32]; // SHA-256 output is 32 bytes
+    br_hmac_key_context kc;
+    br_hmac_key_init(&kc, &br_sha256_vtable, decoded_device_key, decoded_key_length);
+
+    br_hmac_context hmac_ctx;
+    br_hmac_init(&hmac_ctx, &kc, 32);
+    br_hmac_update(&hmac_ctx, (const uint8_t *)stringToSign.c_str(), stringToSign.length());
+    br_hmac_out(&hmac_ctx, hmac_signature);
+
+    // Step 5: Base64 encode the signature
+    String base64_signature = base64::encode(hmac_signature, sizeof(hmac_signature));
+    Serial.print("Base64 Encoded Signature: ");
+    Serial.println(base64_signature);
+
+    // Step 6: URL encode the signature
+    String url_encoded_signature = urlEncode(base64_signature);
+    Serial.print("URL Encoded Signature: ");
+    Serial.println(url_encoded_signature);
+
+    // Step 7: URL encode the resource URI for the SAS token string
+    String encoded_resourceUri = urlEncode(String(resourceUri));
+    Serial.print("URL Encoded Resource URI: ");
+    Serial.println(encoded_resourceUri);
+
+    // Step 8: Construct the SAS token with URL-encoded sr
+    String sas_token_str = "SharedAccessSignature sr=" + encoded_resourceUri + "&sig=" + url_encoded_signature + "&se=" + String(expiry);
+    Serial.print("Constructed SAS Token String: ");
+    Serial.println(sas_token_str);
+
+    // Step 9: Copy the SAS token to the char array (C-style string)
+    if (sas_token_str.length() >= token_size)
+    {
+        Serial.println("Token buffer too small");
+        sas_token[0] = '\0'; // Clear the buffer
+        return;
+    }
+    strncpy(sas_token, sas_token_str.c_str(), token_size - 1);
+    sas_token[token_size - 1] = '\0'; // Ensure null termination
+
+    Serial.print("Final SAS Token: ");
+    Serial.println(sas_token);
+    // // Step 1: Get the expiry time
+    // time_t now = time(NULL);
+    // uint32_t expiry = now + expirySeconds;
+    // Serial.print("expiry: ");
+    // Serial.println(expiry);
+    // // Step 2: Create the string to sign
+    // String stringToSign = String(resourceUri) + "\n" + String(expiry);
+
+    // // Step 3: Decode device key from base64
+    // uint8_t decoded_device_key[64]; // Adjust size as per your key
+    // int decoded_key_length = base64_decode_chars(deviceKey, strlen(deviceKey), (char *)decoded_device_key);
+    // if (decoded_key_length <= 0)
+    // {
+    //     Serial.println("Failed to decode device key");
+    //     sas_token[0] = '\0'; // Return an empty string in case of failure
+    //     return;
+    // }
+
+    // // Step 4: Compute HMAC-SHA256
+    // unsigned char hmac_signature[32]; // SHA-256 output is 32 bytes
+    // br_hmac_key_context kc;
+    // br_hmac_key_init(&kc, &br_sha256_vtable, decoded_device_key, decoded_key_length);
+
+    // br_hmac_context hmac_ctx;
+    // br_hmac_init(&hmac_ctx, &kc, 32);
+    // br_hmac_update(&hmac_ctx, (const uint8_t *)stringToSign.c_str(), stringToSign.length());
+    // br_hmac_out(&hmac_ctx, hmac_signature);
+
+    // // Step 5: Base64 encode the signature
+    // String base64_signature = base64::encode(hmac_signature, sizeof(hmac_signature));
+
+    // // Step 6: URL encode the signature
+    // String url_encoded_signature = urlEncode(base64_signature);
+
+    // // Step 7: Construct the SAS token
+    // String sas_token_str = "SharedAccessSignature sr=" + String(resourceUri) + "&sig=" + url_encoded_signature + "&se=" + String(expiry);
+
+    // // Step 8: Copy the SAS token to the char array (C-style string)
+    // if (sas_token_str.length() >= token_size)
+    // {
+    //     Serial.println("Token buffer too small");
+    //     sas_token[0] = '\0'; // Clear the buffer
+    //     return;
+    // }
+    // strncpy(sas_token, sas_token_str.c_str(), token_size);
+}
+
+// From Azure SDK for C documentation examples
 void initializeTime()
 {
-    Serial.print("Setting time using SNTP");
+    // Serial.print("Setting time using SNTP");
 
     configTime(-5 * 3600, 0, NTP_SERVERS);
     time_t now = time(NULL);
     while (now < 1510592825)
     {
         delay(500);
-        Serial.print(".");
+        // Serial.print(".");
         now = time(NULL);
     }
-    Serial.println("done!");
+    // Serial.println("done!");
 }
 
 char *getCurrentLocalTimeString()
@@ -98,8 +258,8 @@ char *getCurrentLocalTimeString()
 
 void printCurrentTime()
 {
-    Serial.print("Current time: ");
-    Serial.print(getCurrentLocalTimeString());
+    // Serial.print("Current time: ");
+    // Serial.print(getCurrentLocalTimeString());
 }
 
 void receivedCallback(char *topic, byte *payload, unsigned int length)
@@ -136,64 +296,6 @@ void initializeClients()
 
 static uint32_t getSecondsSinceEpoch() { return (uint32_t)time(NULL); }
 
-int generateSasToken(char *sas_token, size_t size)
-{
-    az_span signature_span = az_span_create((uint8_t *)signature, sizeofarray(signature));
-    az_span out_signature_span;
-    az_span encrypted_signature_span = az_span_create((uint8_t *)encrypted_signature, sizeofarray(encrypted_signature));
-
-    uint32_t expiration = getSecondsSinceEpoch() + ONE_HOUR_IN_SECS;
-
-    // Get signature
-    if (az_result_failed(az_iot_hub_client_sas_get_signature(
-            &iot_hub_client, expiration, signature_span, &out_signature_span)))
-    {
-        Serial.println("Failed getting SAS signature");
-        return 1;
-    }
-
-    // Base64-decode device key
-    int base64_decoded_device_key_length = base64_decode_chars(deviceKey, strlen(deviceKey), base64_decoded_device_key);
-
-    if (base64_decoded_device_key_length == 0)
-    {
-        Serial.println("Failed base64 decoding device key");
-        return 1;
-    }
-
-    // SHA-256 encrypt
-    br_hmac_key_context kc;
-    br_hmac_key_init(
-        &kc, &br_sha256_vtable, base64_decoded_device_key, base64_decoded_device_key_length);
-
-    br_hmac_context hmac_ctx;
-    br_hmac_init(&hmac_ctx, &kc, 32);
-    br_hmac_update(&hmac_ctx, az_span_ptr(out_signature_span), az_span_size(out_signature_span));
-    br_hmac_out(&hmac_ctx, encrypted_signature);
-
-    // Base64 encode encrypted signature
-    String b64enc_hmacsha256_signature = base64::encode(encrypted_signature, br_hmac_size(&hmac_ctx));
-
-    az_span b64enc_hmacsha256_signature_span = az_span_create(
-        (uint8_t *)b64enc_hmacsha256_signature.c_str(), b64enc_hmacsha256_signature.length());
-
-    // URl-encode base64 encoded encrypted signature
-    if (az_result_failed(az_iot_hub_client_sas_get_password(
-            &iot_hub_client,
-            expiration,
-            b64enc_hmacsha256_signature_span,
-            AZ_SPAN_EMPTY,
-            sas_token,
-            size,
-            NULL)))
-    {
-        Serial.println("Failed getting SAS token");
-        return 1;
-    }
-
-    return 0;
-}
-
 static int connectToAzureIoTHub()
 {
     size_t client_id_length;
@@ -216,20 +318,21 @@ static int connectToAzureIoTHub()
         return 1;
     }
 
-    Serial.print("Client ID: ");
-    Serial.println(mqtt_client_id);
+    // Serial.print("Client ID: ");
+    // Serial.println(mqtt_client_id);
 
-    Serial.print("Username: ");
-    Serial.println(mqtt_username);
+    // Serial.print("Username: ");
+    // Serial.println(mqtt_username);
 
     mqtt_client.setBufferSize(MQTT_PACKET_SIZE);
-
+    generateSasToken(sas_token, sizeofarray(sas_token), resourceUri, deviceKey, ONE_HOUR_IN_SECS);
+    Serial.print("sas_token: ");
+    Serial.println(sas_token);
     while (!mqtt_client.connected())
     {
         time_t now = time(NULL);
 
         Serial.print("MQTT connecting ... ");
-
         if (mqtt_client.connect(mqtt_client_id, mqtt_username, sas_token))
         {
             Serial.println("connected.");
@@ -251,20 +354,9 @@ static int connectToAzureIoTHub()
 
 void AzureManager::establishConnection()
 {
-    Serial.print("establishConnection()");
+    Serial.println("establishConnection()");
     initializeTime();
     printCurrentTime();
     initializeClients();
-
-    // The SAS token is valid for 1 hour by default in this sample.
-    // After one hour the sample must be restarted, or the client won't be able
-    // to connect/stay connected to the Azure IoT Hub.
-    if (generateSasToken(sas_token, sizeofarray(sas_token)) != 0)
-    {
-        Serial.println("Failed generating MQTT password");
-    }
-    else
-    {
-        connectToAzureIoTHub();
-    }
+    connectToAzureIoTHub();
 }
