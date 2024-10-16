@@ -16,18 +16,18 @@ void setup()
   wifiManager.initialize();
   wifiManager.connect();
   sensorManager.initialize();
-  azureManager.initialize();
+  // azureManager.initialize();
   delay(2000);
 }
 
 void loop()
 {
-  azureManager.keepConnection();
+  // azureManager.keepConnection();
   sensorManager.readSensors();
 
   float humidity = sensorManager.getHumidity();
   float temperature = sensorManager.getTemperature();
-  // float luminosity = sensorManager.getLuminosity();
+  float luminosity = sensorManager.getLuminosity();
   float pressure = sensorManager.getPressure();
   Serial.print("Humidity: ");
   Serial.print(humidity);
@@ -37,8 +37,8 @@ void loop()
   Serial.print(temperature);
   Serial.println("°C");
   Serial.println();
-  // Serial.print("Luminosity: ");
-  // Serial.println(luminosity);
+  Serial.print("Luminosity: ");
+  Serial.println(luminosity);
   Serial.print("Pressure: ");
   Serial.print(pressure);
   Serial.println("hPa");
@@ -49,8 +49,7 @@ void loop()
     Serial.println("WiFi connection lost, reconnecting.");
     wifiManager.connect();
   }
-  float luminosity = 0.0;
-  azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
+  // azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
 
   delay(3000);
 }
