@@ -8,20 +8,21 @@
 
 SensorManager sensorManager;
 WiFiManager wifiManager(ssid, pass);
-AzureManager azureManager(mqttServer, mqttPort, deviceId, sasToken);
+AzureManager azureManager(host, port, deviceId, deviceKey);
 
 void setup()
 {
   Serial.begin(9600);
   wifiManager.initialize();
   wifiManager.connect();
-  // azureManager.initialize();
   sensorManager.initialize();
+  azureManager.initialize();
   delay(2000);
 }
 
 void loop()
 {
+  azureManager.keepConnection();
   sensorManager.readSensors();
 
   float humidity = sensorManager.getHumidity();
@@ -48,8 +49,8 @@ void loop()
     Serial.println("WiFi connection lost, reconnecting.");
     wifiManager.connect();
   }
-
-  // azureManager.sendToAzure(temperature, humidity, luminosity);
+  float luminosity = 0.0;
+  azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
 
   delay(3000);
 }
