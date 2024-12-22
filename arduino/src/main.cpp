@@ -16,13 +16,13 @@ void setup()
   wifiManager.initialize();
   wifiManager.connect();
   sensorManager.initialize();
-  // azureManager.initialize();
+  azureManager.initialize();
   delay(2000);
 }
 
 void loop()
 {
-  // azureManager.keepConnection();
+  azureManager.establishConnection();
   sensorManager.readSensors();
 
   float humidity = sensorManager.getHumidity();
@@ -49,7 +49,7 @@ void loop()
     Serial.println("WiFi connection lost, reconnecting.");
     wifiManager.connect();
   }
-  // azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
+  azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
 
   delay(3000);
 }
