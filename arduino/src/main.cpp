@@ -10,6 +10,9 @@ SensorManager sensorManager;
 WiFiManager wifiManager(ssid, pass);
 AzureManager azureManager(host, port, deviceId, deviceKey);
 
+unsigned long lastSendTime = 0;
+const unsigned long sendInterval = 60000;
+
 void setup()
 {
   Serial.begin(9600);
@@ -17,13 +20,14 @@ void setup()
   wifiManager.connect();
   sensorManager.initialize();
   azureManager.initialize();
+  sensorManager.readSensors();
   delay(2000);
 }
 
 void loop()
 {
-  azureManager.establishConnection();
-  sensorManager.readSensors();
+  // azureManager.establishConnection();
+  // sensorManager.readSensors();
 
   float humidity = sensorManager.getHumidity();
   float temperature = sensorManager.getTemperature();
@@ -49,7 +53,10 @@ void loop()
     Serial.println("WiFi connection lost, reconnecting.");
     wifiManager.connect();
   }
+  unsigned long currentMillis = millis();
+  Serial.print("current time: ");
+  Serial.print(currentMillis);
   azureManager.sendToAzure(temperature, humidity, pressure, luminosity);
 
-  delay(3000);
+  delay(30000);
 }

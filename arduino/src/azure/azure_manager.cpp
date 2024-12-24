@@ -227,7 +227,7 @@ void generateSasToken(char *sas_token, size_t size)
     Serial.print("TIME now: ");
     Serial.print(getSecondsSinceEpoch());
 
-    uint32_t expiration = getSecondsSinceEpoch() + ONE_HOUR_IN_SECS;
+    uint32_t expiration = getSecondsSinceEpoch() + (ONE_HOUR_IN_SECS * 24);
 
     // Get signature
     if (az_result_failed(az_iot_hub_client_sas_get_signature(
