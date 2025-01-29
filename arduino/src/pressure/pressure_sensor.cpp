@@ -16,7 +16,7 @@ bool PressureSensor::begin()
 
 void PressureSensor::read()
 {
-    pressure = bmp.readPressure() / 100.0F; // Conversion to hPa
+    pressure = bmp.readPressure() / 100.0F; // Converts the value to hPa
 
     if (isnan(pressure))
     {

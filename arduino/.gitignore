@@ -5,3 +5,6 @@
 .vscode/ipch
 credentials.h
 azure_ca.h
+.vscode
+.code-workspace
+.DS_Store

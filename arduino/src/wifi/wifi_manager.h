@@ -10,7 +10,6 @@ public:
     void initialize();
     void connect();
     bool isConnected();
-    IPAddress getIP();
 
 private:
     const char *ssid;

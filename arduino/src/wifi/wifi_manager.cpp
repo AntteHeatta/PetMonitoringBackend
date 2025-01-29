@@ -13,10 +13,6 @@ void WiFiManager::initialize()
         delay(500);
         Serial.println("Attempting to connect to WiFi");
     }
-
-    Serial.println("Connected to WiFi");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
 }
 
 void WiFiManager::connect()
@@ -36,9 +32,4 @@ void WiFiManager::connect()
 bool WiFiManager::isConnected()
 {
     return WiFi.status() == WL_CONNECTED;
-}
-
-IPAddress WiFiManager::getIP()
-{
-    return WiFi.localIP();
 }
